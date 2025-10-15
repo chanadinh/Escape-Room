@@ -1,103 +1,206 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import ControlConsole from '@/components/ControlConsole';
+import FuelWarning from '@/components/FuelWarning';
+import TransmissionPanel from '@/components/TransmissionPanel';
+import FuelCodeEntry from '@/components/FuelCodeEntry';
+import QROverlay from '@/components/QROverlay';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const router = useRouter();
+  const [gameState, setGameState] = useState<'running' | 'warning' | 'gameOver' | 'escaped'>('running');
+  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
+  const [fuelLevel, setFuelLevel] = useState(100);
+  const [showTransmission, setShowTransmission] = useState(false);
+  const [showFuelEntry, setShowFuelEntry] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [damageLevel, setDamageLevel] = useState(0);
+  const [fuelErrorMsg, setFuelErrorMsg] = useState<string | undefined>(undefined);
+  const [musicOn, setMusicOn] = useState(true);
+  const bgAudioRef = useRef<HTMLAudioElement>(null);
+  const fuelCodeFromEnv = (process.env.NEXT_PUBLIC_FUEL_CODE || 'FUEL').toUpperCase();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Timer countdown
+  useEffect(() => {
+    if (gameState === 'running' || gameState === 'warning') {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          const newTime = prev - 1;
+          if (newTime <= 0) {
+            setGameState('gameOver');
+            return 0;
+          }
+          return newTime;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [gameState]);
+
+  // Background music: try to play on first interaction and when enabled
+  useEffect(() => {
+    const tryPlay = () => {
+      if (!musicOn || gameState === 'gameOver') return;
+      const a = bgAudioRef.current;
+      if (!a) return;
+      a.volume = 0.35;
+      a.loop = true;
+      a.play().catch(() => {});
+    };
+
+    // attempt immediately and also on first user gesture
+    tryPlay();
+    window.addEventListener('pointerdown', tryPlay, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', tryPlay);
+    };
+  }, [musicOn, gameState]);
+
+  // Pause when disabled or on game over
+  useEffect(() => {
+    const a = bgAudioRef.current;
+    if (!a) return;
+    if (!musicOn || gameState === 'gameOver') a.pause();
+  }, [musicOn, gameState]);
+
+  // Fuel level decreases over time
+  useEffect(() => {
+    if (gameState === 'running' || gameState === 'warning') {
+      const fuelTimer = setInterval(() => {
+        setFuelLevel((prev) => {
+          const newLevel = prev - (100 / (15 * 60)); // Decrease over 15 minutes
+          if (newLevel <= 20 && gameState === 'running') {
+            setGameState('warning');
+          }
+          return Math.max(0, newLevel);
+        });
+      }, 1000);
+
+      return () => clearInterval(fuelTimer);
+    }
+  }, [gameState]);
+
+  // Game over conditions: fuel empty or damage maxed
+  useEffect(() => {
+    if ((gameState === 'running' || gameState === 'warning') && fuelLevel <= 0) {
+      setGameState('gameOver');
+    }
+  }, [fuelLevel, gameState]);
+
+  useEffect(() => {
+    if ((gameState === 'running' || gameState === 'warning') && damageLevel >= 100) {
+      setGameState('gameOver');
+    }
+  }, [damageLevel, gameState]);
+
+  const handleQRScan = () => {
+    setShowQR(true);
+  };
+
+  const handleFuelCodeSubmit = (code: string) => {
+    const normalized = code.toUpperCase();
+    if (normalized === fuelCodeFromEnv && normalized.length === 4) {
+      setFuelLevel(100);
+      setGameState('running');
+      setShowFuelEntry(false);
+      setShowTransmission(false);
+      setFuelErrorMsg(undefined);
+      // Could trigger escape sequence here
+    } else {
+      setDamageLevel((prev) => Math.min(100, prev + 10));
+      setFuelErrorMsg('Incorrect fuel code. Damage sustained!');
+      try {
+        const a = new Audio('/sounds/key-beep.mp3');
+        a.play().catch(() => {});
+      } catch {}
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-green-400 font-mono overflow-hidden relative">
+      <div className="scanline"></div>
+      <div className="container mx-auto p-4 h-screen flex flex-col">
+        <ControlConsole 
+          timeLeft={formatTime(timeLeft)}
+          fuelLevel={fuelLevel}
+          gameState={gameState}
+          damageLevel={damageLevel}
+        />
+        
+        {gameState === 'warning' && (
+          <FuelWarning 
+            timeLeft={formatTime(timeLeft)}
+            onShowFuelEntry={() => setShowFuelEntry(true)}
+          />
+        )}
+        
+        {gameState === 'gameOver' && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-6xl mb-4 text-red-500 animate-pulse">
+                {fuelLevel <= 0 ? 'NO FUEL REMAINING' : 'CRITICAL DAMAGE'}
+              </div>
+              <div className="text-2xl text-red-400">
+                MISSION FAILED
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showTransmission && (
+          <TransmissionPanel onClose={() => setShowTransmission(false)} />
+        )}
+
+        {showFuelEntry && (
+          <FuelCodeEntry 
+            onSubmit={handleFuelCodeSubmit}
+            errorMessage={fuelErrorMsg}
+            onClose={() => setShowFuelEntry(false)}
+          />
+        )}
+
+        {/* Actions */}
+        <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
+          <button
+            onClick={handleQRScan}
+            className="bg-green-900 hover:bg-green-800 border border-green-500 px-6 py-3 rounded text-green-400 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            SCAN QR CODE
+          </button>
+          <button
+            onClick={() => setShowFuelEntry(true)}
+            className="bg-green-900 hover:bg-green-800 border border-green-500 px-6 py-3 rounded text-green-400 transition-colors"
           >
-            Read our docs
-          </a>
+            ENTER FUEL CODE
+          </button>
+          <button
+            onClick={() => setMusicOn((v) => !v)}
+            className="bg-green-900 hover:bg-green-800 border border-green-500 px-6 py-3 rounded text-green-400 transition-colors"
+          >
+            {musicOn ? 'MUSIC: ON' : 'MUSIC: OFF'}
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        {showQR && (
+          <QROverlay
+            value={(typeof window !== 'undefined' ? window.location.origin : '') + '/transmission?from=qr'}
+            onClose={() => setShowQR(false)}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        )}
+      </div>
+      {/* Background music */}
+      <audio ref={bgAudioRef} preload="auto">
+        <source src="/sounds/morse-code.mp3" type="audio/mpeg" />
+      </audio>
     </div>
   );
 }

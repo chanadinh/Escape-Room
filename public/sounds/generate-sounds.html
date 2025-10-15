@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sound Generator</title>
+</head>
+<body>
+    <h1>Sound Generator for Escape Room</h1>
+    <p>This page will generate the required audio files. Open browser console to see instructions.</p>
+    
+    <script>
+        // Generate warning alarm sound
+        function generateWarningAlarm() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const duration = 2; // 2 seconds
+            const sampleRate = audioContext.sampleRate;
+            const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < buffer.length; i++) {
+                const time = i / sampleRate;
+                // Create a pulsing alarm sound
+                const frequency = 800 + Math.sin(time * 10) * 200;
+                const amplitude = Math.sin(time * Math.PI * 4) * 0.3;
+                data[i] = amplitude * Math.sin(2 * Math.PI * frequency * time);
+            }
+            
+            return buffer;
+        }
+        
+        // Generate Morse code sound
+        function generateMorseCode() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const morsePattern = "... --- ... / ... --- ... / .-.. --- ...- . / -.-- --- ..- / .... .- ...- . / ..-. ..- -. / .. -. / - .... . / . ... -.-. .- .--. . / .-. --- --- -- / - .... . / ..-. ..- . .-.. / -.-. --- -.. . / .. ... / ..-. ..- . .-.. / ... -.-. .. . -. -.-. .";
+            const dotDuration = 0.1;
+            const dashDuration = 0.3;
+            const spaceDuration = 0.1;
+            
+            let totalDuration = 0;
+            const segments = [];
+            
+            for (let char of morsePattern) {
+                if (char === '.') {
+                    segments.push({ type: 'tone', duration: dotDuration });
+                    totalDuration += dotDuration + spaceDuration;
+                } else if (char === '-') {
+                    segments.push({ type: 'tone', duration: dashDuration });
+                    totalDuration += dashDuration + spaceDuration;
+                } else if (char === ' ') {
+                    segments.push({ type: 'silence', duration: spaceDuration * 3 });
+                    totalDuration += spaceDuration * 3;
+                } else if (char === '/') {
+                    segments.push({ type: 'silence', duration: spaceDuration * 7 });
+                    totalDuration += spaceDuration * 7;
+                }
+            }
+            
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * totalDuration, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            let currentTime = 0;
+            for (let segment of segments) {
+                const startSample = Math.floor(currentTime * audioContext.sampleRate);
+                const endSample = Math.floor((currentTime + segment.duration) * audioContext.sampleRate);
+                
+                if (segment.type === 'tone') {
+                    for (let i = startSample; i < endSample && i < buffer.length; i++) {
+                        const time = i / audioContext.sampleRate;
+                        data[i] = 0.3 * Math.sin(2 * Math.PI * 600 * time);
+                    }
+                }
+                // For silence, data[i] remains 0
+                
+                currentTime += segment.duration;
+            }
+            
+            return buffer;
+        }
+        
+        // Generate key beep sound
+        function generateKeyBeep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const duration = 0.1;
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * duration, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < buffer.length; i++) {
+                const time = i / audioContext.sampleRate;
+                data[i] = 0.2 * Math.sin(2 * Math.PI * 1000 * time) * Math.exp(-time * 20);
+            }
+            
+            return buffer;
+        }
+        
+        // Function to download audio as WAV
+        function downloadAudio(buffer, filename) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const wav = audioBufferToWav(buffer);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Convert AudioBuffer to WAV
+        function audioBufferToWav(buffer) {
+            const length = buffer.length;
+            const arrayBuffer = new ArrayBuffer(44 + length * 2);
+            const view = new DataView(arrayBuffer);
+            
+            // WAV header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, buffer.sampleRate, true);
+            view.setUint32(28, buffer.sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * 2, true);
+            
+            // Convert float samples to 16-bit PCM
+            const channelData = buffer.getChannelData(0);
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, channelData[i]));
+                view.setInt16(offset, sample * 0x7FFF, true);
+                offset += 2;
+            }
+            
+            return arrayBuffer;
+        }
+        
+        // Generate and download all sounds
+        function generateAllSounds() {
+            console.log('Generating sounds...');
+            
+            const warningBuffer = generateWarningAlarm();
+            const morseBuffer = generateMorseCode();
+            const beepBuffer = generateKeyBeep();
+            
+            downloadAudio(warningBuffer, 'warning-alarm.wav');
+            downloadAudio(morseBuffer, 'morse-code.wav');
+            downloadAudio(beepBuffer, 'key-beep.wav');
+            
+            console.log('All sounds generated! Check your downloads folder.');
+        }
+        
+        // Auto-generate sounds when page loads
+        window.addEventListener('load', () => {
+            console.log('Click the button below to generate audio files:');
+            const button = document.createElement('button');
+            button.textContent = 'Generate Sound Files';
+            button.onclick = generateAllSounds;
+            button.style.padding = '10px 20px';
+            button.style.fontSize = '16px';
+            button.style.margin = '20px';
+            document.body.appendChild(button);
+        });
+    </script>
+</body>
+</html>
+
