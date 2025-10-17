@@ -10,11 +10,12 @@ interface ControlConsoleProps {
   fuelLevel: number;
   gameState: string;
   damageLevel?: number;
+  onShowFuelEntry: () => void;
 }
 
-export default function ControlConsole({ timeLeft, fuelLevel, gameState, damageLevel = 0 }: ControlConsoleProps) {
+export default function ControlConsole({ timeLeft, fuelLevel, gameState, damageLevel: _damageLevel = 0, onShowFuelEntry }: ControlConsoleProps) {
   return (
-    <div className="bg-[#0b0f14] border-2 border-yellow-500 rounded-lg p-4 md:p-6 shadow-2xl">
+    <div className="bg-[#0b0f14] border-2 border-yellow-500 rounded-lg p-4 md:p-6 shadow-2xl h-full flex flex-col">
       {/* Top HUD row */}
       <div className="grid grid-cols-[auto_1fr_auto] gap-3">
         {/* Left: Fuel vertical gauge and mini dials */}
@@ -29,7 +30,7 @@ export default function ControlConsole({ timeLeft, fuelLevel, gameState, damageL
         </div>
 
         {/* Center: Wireframe viewport */}
-        <div>
+        <div className="min-h-[200px]">
           <WireframeViewport />
         </div>
 
@@ -40,7 +41,7 @@ export default function ControlConsole({ timeLeft, fuelLevel, gameState, damageL
       </div>
 
       {/* Bottom status strip */}
-      <BottomStatusStrip timeLeft={timeLeft} damageLevel={damageLevel} />
+      <BottomStatusStrip timeLeft={timeLeft} fuelLevel={fuelLevel} onShowFuelEntry={onShowFuelEntry} />
 
       {/* Mission status bar */}
       <div className="mt-4 bg-black border-2 border-yellow-500 rounded p-3">

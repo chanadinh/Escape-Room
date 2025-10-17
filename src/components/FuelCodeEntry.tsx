@@ -19,20 +19,24 @@ export default function FuelCodeEntry({ onSubmit, onClose, errorMessage }: FuelC
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (code.length === 4) {
-      setAttempts(prev => prev + 1);
       onSubmit(code);
     }
   };
 
+  // Increment attempts only when an error message appears (i.e., incorrect code)
+  useEffect(() => {
+    if (errorMessage) {
+      setAttempts(prev => prev + 1);
+    }
+  }, [errorMessage]);
+
   const playKeySound = () => {
-    const audio = new Audio('/sounds/key-beep.wav');
-    audio.play().catch(() => {
-      const fallback = new Audio('/sounds/key-beep.mp3');
-      fallback.play().catch(() => {});
-    });
+    const audio = new Audio('/sounds/key-beep.mp3');
+    audio.play().catch(() => {});
+      
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +94,7 @@ export default function FuelCodeEntry({ onSubmit, onClose, errorMessage }: FuelC
           
           <div className="flex justify-center space-x-4">
             <button
-              onClick={() => onSubmit(code)}
+              onClick={() => handleSubmit()}
               disabled={code.length !== 4}
               className="bg-green-700 hover:bg-green-600 disabled:bg-gray-600 border border-green-500 px-6 py-3 rounded text-green-100 font-bold transition-colors disabled:cursor-not-allowed"
             >
