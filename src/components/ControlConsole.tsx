@@ -4,6 +4,7 @@ import VerticalGauge from './VerticalGauge';
 import WireframeViewport from './WireframeViewport';
 import NavigationDials from './NavigationDials';
 import BottomStatusStrip from './BottomStatusStrip';
+import { UI } from 'cosmic-ui';
 
 interface ControlConsoleProps {
   timeLeft: string;
@@ -15,7 +16,7 @@ interface ControlConsoleProps {
 
 export default function ControlConsole({ timeLeft, fuelLevel, gameState, damageLevel: _damageLevel = 0, onShowFuelEntry }: ControlConsoleProps) {
   return (
-    <div className="bg-[#0b0f14] border-2 border-yellow-500 rounded-lg p-4 md:p-6 shadow-2xl h-full flex flex-col">
+    <UI tag="div" padding="m" className="bg-[#0b0f14] border-2 border-yellow-500 rounded-lg shadow-2xl h-full flex flex-col">
       {/* Top HUD row */}
       <div className="grid grid-cols-[auto_1fr_auto] gap-3">
         {/* Left: Fuel vertical gauge and mini dials */}
@@ -48,7 +49,7 @@ export default function ControlConsole({ timeLeft, fuelLevel, gameState, damageL
         <div className="text-xs text-yellow-300 tracking-widest">MISSION STATUS</div>
         <div className="text-lg font-bold text-green-400">{gameState === 'running' ? 'ACTIVE' : gameState === 'warning' ? 'WARNING' : gameState === 'gameOver' ? 'CRITICAL' : 'COMPLETE'}</div>
       </div>
-    </div>
+    </UI>
   );
 }
 
