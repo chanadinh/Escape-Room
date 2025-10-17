@@ -160,8 +160,9 @@ export default function Home() {
           }
         }
 
-        // If we found a new scan
-        if (latestScan && latestScanTime && (!lastQRScanTime || latestScanTime > lastQRScanTime)) {
+        // If we found a new scan that is recent (<= 10s) and newer than the last seen
+        const isRecent = latestScanTime && (Date.now() - latestScanTime.getTime()) <= 10000;
+        if (latestScan && latestScanTime && isRecent && (!lastQRScanTime || latestScanTime > lastQRScanTime)) {
           setLastQRScanTime(latestScanTime);
 
           // Trigger fuel entry modal
@@ -263,36 +264,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* QR Code Selection */}
-        <div className="mt-8 text-center">
-          <div className="text-lg text-green-300 mb-4">SELECT QR CODE TO SCAN</div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button
-              onClick={() => window.open('/qr_1', '_blank')}
-              className="bg-green-900 hover:bg-green-800 border border-green-500 px-4 py-3 rounded text-green-400 font-bold transition-colors"
-            >
-              QR #1
-            </button>
-            <button
-              onClick={() => window.open('/qr_2', '_blank')}
-              className="bg-green-900 hover:bg-green-800 border border-green-500 px-4 py-3 rounded text-green-400 font-bold transition-colors"
-            >
-              QR #2
-            </button>
-            <button
-              onClick={() => window.open('/qr_3', '_blank')}
-              className="bg-green-900 hover:bg-green-800 border border-green-500 px-4 py-3 rounded text-green-400 font-bold transition-colors"
-            >
-              QR #3
-            </button>
-            <button
-              onClick={() => window.open('/qr_4', '_blank')}
-              className="bg-green-900 hover:bg-green-800 border border-green-500 px-4 py-3 rounded text-green-400 font-bold transition-colors"
-            >
-              QR #4
-            </button>
-          </div>
-        </div>
+        
 
         {/* Warning overlay */}
         {gameState === 'warning' && (
