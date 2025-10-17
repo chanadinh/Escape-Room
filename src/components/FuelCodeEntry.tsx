@@ -7,10 +7,9 @@ interface FuelCodeEntryProps {
   onClose: () => void;
   errorMessage?: string;
   attempts: number;
-  setAttempts: (value: number | ((prev: number) => number)) => void;
 }
 
-export default function FuelCodeEntry({ onSubmit, onClose, errorMessage, attempts, setAttempts }: FuelCodeEntryProps) {
+export default function FuelCodeEntry({ onSubmit, onClose, errorMessage, attempts }: FuelCodeEntryProps) {
   const [code, setCode] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 

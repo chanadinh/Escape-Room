@@ -16,7 +16,7 @@ export default function Home() {
   // const [showQR, setShowQR] = useState(false); // removed from UI
   const [damageLevel, setDamageLevel] = useState(0);
   const [fuelErrorMsg, setFuelErrorMsg] = useState<string | undefined>(undefined);
-  const [musicOn, setMusicOn] = useState(true);
+  const [musicOn] = useState(true);
   const [attempts, setAttempts] = useState(0);
   const bgAudioRef = useRef<HTMLAudioElement>(null);
   const [periodicWarning, setPeriodicWarning] = useState(false);
@@ -161,7 +161,7 @@ export default function Home() {
         }
 
         // If we found a new scan
-        if (latestScan && (!lastQRScanTime || latestScanTime > lastQRScanTime)) {
+        if (latestScan && latestScanTime && (!lastQRScanTime || latestScanTime > lastQRScanTime)) {
           setLastQRScanTime(latestScanTime);
 
           // Trigger fuel entry modal
@@ -241,7 +241,6 @@ export default function Home() {
             timeLeft={formatTime(timeLeft)}
             fuelLevel={fuelLevel}
             gameState={gameState}
-            damageLevel={damageLevel}
             onShowFuelEntry={() => { setFuelErrorMsg(undefined); setShowFuelEntry(true); }}
           />
           {gameState === 'gameOver' && (
@@ -315,7 +314,6 @@ export default function Home() {
             errorMessage={fuelErrorMsg}
             onClose={() => { setFuelErrorMsg(undefined); setShowFuelEntry(false); }}
             attempts={attempts}
-            setAttempts={setAttempts}
           />
         )}
 

@@ -15,7 +15,7 @@ interface ControlConsoleProps {
   onShowFuelEntry: () => void;
 }
 
-export default function ControlConsole({ timeLeft, fuelLevel, gameState, damageLevel: _damageLevel = 0, onShowFuelEntry }: ControlConsoleProps) {
+export default function ControlConsole({ timeLeft, fuelLevel, gameState, onShowFuelEntry }: ControlConsoleProps) {
   return (
     <div
       className={twMerge([
