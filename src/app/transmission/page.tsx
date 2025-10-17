@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 
-export default function TransmissionPage() {
+function TransmissionContent() {
+  const searchParams = useSearchParams();
+  const qrSource = searchParams.get('from');
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -17,6 +20,9 @@ export default function TransmissionPage() {
     <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center p-6">
       <div className="max-w-2xl w-full bg-gray-900 border-2 border-green-500 rounded-lg p-8 text-center">
         <div className="text-3xl font-bold glow-text mb-2">TRANSMISSION INCOMING</div>
+        {qrSource && (
+          <div className="text-green-300 mb-2">Source: {qrSource.toUpperCase()}</div>
+        )}
         <div className="text-green-300 mb-6">Decoding encrypted message... (Morse)</div>
 
         <div className="bg-black border border-green-500 rounded p-6 text-left mb-6">
@@ -61,5 +67,10 @@ export default function TransmissionPage() {
   );
 }
 
-
-
+export default function TransmissionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center">Loading...</div>}>
+      <TransmissionContent />
+    </Suspense>
+  );
+}

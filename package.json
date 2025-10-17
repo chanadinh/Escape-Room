@@ -9,13 +9,22 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ark-ui/react": "^5.26.1",
+    "@emotion/css": "^11.13.5",
+    "@left4code/svg-renderer": "^1.0.4",
     "@types/qrcode": "^1.5.5",
+    "cosmic-ui": "^1.1.12",
     "howler": "^2.2.4",
+    "lucide-react": "^0.546.0",
+    "mongodb": "^6.20.0",
+    "mongoose": "^8.19.1",
     "next": "15.5.5",
     "qrcode": "^1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-qr-code": "^2.0.18"
+    "react-qr-code": "^2.0.18",
+    "tailwind-merge": "^3.3.1",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

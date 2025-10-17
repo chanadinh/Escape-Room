@@ -16,7 +16,6 @@ export default function VerticalGauge({ label, level, colorFrom = '#ff3b3b', col
         <div className="flex flex-col gap-1">
           {Array.from({ length: bars }).map((_, i) => {
             const active = i < filled;
-            const t = i / Math.max(1, bars - 1);
             const color = active
               ? `linear-gradient(90deg, ${colorFrom}, ${colorTo})`
               : 'linear-gradient(90deg, #1f1f1f, #2a2a2a)';
