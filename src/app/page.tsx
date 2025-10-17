@@ -141,7 +141,7 @@ export default function Home() {
     const pollQRScans = async () => {
       try {
         // Check for recent QR scans from all QR codes (last 10 seconds)
-        const qrCodes = ['qr_1', 'qr_2', 'qr_3', 'qr_4'];
+        const qrCodes = ['qr_3'];
         let latestScanTime = null;
         let latestScan = null;
 
