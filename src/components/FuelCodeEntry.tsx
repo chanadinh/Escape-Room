@@ -6,11 +6,12 @@ interface FuelCodeEntryProps {
   onSubmit: (code: string) => void;
   onClose: () => void;
   errorMessage?: string;
+  attempts: number;
+  setAttempts: (value: number | ((prev: number) => number)) => void;
 }
 
-export default function FuelCodeEntry({ onSubmit, onClose, errorMessage }: FuelCodeEntryProps) {
+export default function FuelCodeEntry({ onSubmit, onClose, errorMessage, attempts, setAttempts }: FuelCodeEntryProps) {
   const [code, setCode] = useState('');
-  const [attempts, setAttempts] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,12 +27,7 @@ export default function FuelCodeEntry({ onSubmit, onClose, errorMessage }: FuelC
     }
   };
 
-  // Increment attempts only when an error message appears (i.e., incorrect code)
-  useEffect(() => {
-    if (errorMessage) {
-      setAttempts(prev => prev + 1);
-    }
-  }, [errorMessage]);
+  // Attempts are now managed in the parent component
 
   const playKeySound = () => {
     const audio = new Audio('/sounds/key-beep.mp3');

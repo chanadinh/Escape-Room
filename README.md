@@ -25,7 +25,8 @@ A Next.js-based interactive escape room experience with a retro sci-fi spaceship
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
+- MongoDB (local installation or MongoDB Atlas)
 - npm or yarn
 
 ### Installation
@@ -40,46 +41,86 @@ A Next.js-based interactive escape room experience with a retro sci-fi spaceship
    npm install
    ```
 
-3. **Generate audio files**:
+3. **Set up MongoDB**:
+   - **Local MongoDB**: Make sure MongoDB is running on your system
+   - **MongoDB Atlas**: Create a free cluster and get your connection string
+   - Update the `.env` file with your MongoDB URI:
+     ```bash
+     MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/escape-room
+     ```
+
+4. **Configure domain and fuel code**:
+   - Copy `.env.example` to `.env` and update the values:
+     ```bash
+     cp .env.example .env
+     ```
+   - Edit `.env` file to set your domain and fuel code:
+     ```bash
+     NEXT_PUBLIC_BASE_URL=https://your-actual-domain.com
+     NEXT_PUBLIC_FUEL_CODE=YOUR_4_CHAR_CODE
+     ```
+
+5. **Generate audio files**:
    - Open `http://localhost:3000/sounds/generate-sounds.html` in your browser
    - Click "Generate Sound Files" to download audio files
    - Move the generated `.wav` files to the `public/sounds/` directory
 
-4. **Start the development server**:
+6. **Start the development server**:
    ```bash
    npm run dev
    ```
 
-5. **Open your browser** and navigate to `http://localhost:3000`
+7. **Open your browser** and navigate to `http://localhost:3000`
+
+### QR Code Setup
+
+The application includes 4 QR codes that can be accessed at:
+- `https://your-domain.com/qr_1`
+- `https://your-domain.com/qr_2`
+- `https://your-domain.com/qr_3`
+- `https://your-domain.com/qr_4`
+
+**Important**: Update the `NEXT_PUBLIC_BASE_URL` in your `.env` file to match your actual domain name so the QR codes contain the correct URLs.
+
+Each QR code page allows printing and downloading of the QR code for physical use in your escape room.
 
 ## Game Flow
 
 ### Initial State
 - Console displays with 100% fuel and 15:00 countdown
 - All systems show "ONLINE" status
-- QR code scanner button is available
+- QR code selection buttons are available
+- Background Morse code music starts after first interaction
 
 ### Warning Phase (Fuel < 20%)
 - Red warning panel appears with pulsing animation
 - Audio alarm plays every 10 seconds
 - "ENTER FUEL CODE" button becomes available
 
-### QR Code Scanning
-- Click "SCAN QR CODE" button
-- Transmission panel opens with Morse code message
-- Audio plays the decoded message
-- Message reveals fuel code hint: "FUEL SCIENCE"
+### QR Code Scanning & Tracking
+- **QR Code Access**: Click any "QR #X" button to access QR code pages
+- **QR Code Logging**: Each QR page access is logged to MongoDB with timestamp
+- **Automatic Trigger**: When a QR code is scanned (page accessed), the main console automatically opens the fuel entry modal
+- **Source Tracking**: Transmission page shows which QR code was scanned
 
 ### Fuel Code Entry
 - 4-character input field with key beep sounds
-- Accepts: FUEL, HYDR, QUAN, DEUT
-- Correct code restores fuel to 100%
-- Wrong attempts are tracked
+- Accepts: FUEL, HYDR, QUAN, DEUT (configurable via NEXT_PUBLIC_FUEL_CODE)
+- Correct code restores fuel to 100% and triggers win state
+- Wrong attempts are tracked and cause ship damage
+- Attempts counter persists across modal sessions
+
+### Win State
+- "MISSION ACCOMPLISHED" overlay appears
+- Background music stops
+- Win sound plays
+- Timer stops and shows remaining time
 
 ### Game Over
-- When countdown reaches 00:00
-- "NO FUEL REMAINING" message
+- When countdown reaches 00:00 or damage reaches 100%
+- "NO FUEL REMAINING" or "CRITICAL DAMAGE" message
 - Mission failure state
+- Background music stops
 
 ## Customization
 
