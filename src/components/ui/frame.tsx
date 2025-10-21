@@ -22,3 +22,4 @@ function Frame({ className, paths, ...props }: { paths: Paths } & React.Componen
 }
 
 export { Frame };
+

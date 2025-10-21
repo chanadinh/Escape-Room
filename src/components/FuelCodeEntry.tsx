@@ -75,17 +75,7 @@ export default function FuelCodeEntry({ onSubmit, onClose, errorMessage, attempt
             </form>
           </div>
           
-          <div className="bg-black border border-green-500 p-4 rounded mb-6">
-            <div className="text-green-300 text-sm">
-              <div className="mb-2">Available fuel types:</div>
-              <div className="text-green-400 font-mono">
-                F U E L - Standard Fuel<br/>
-                H Y D R - Hydrogen<br/>
-                Q U A N - Quantum<br/>
-                D E U T - Deuterium
-              </div>
-            </div>
-          </div>
+          
           
           <div className="flex justify-center space-x-4">
             <button

@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import ControlConsole from '@/components/ControlConsole';
-import FuelWarning from '@/components/FuelWarning';
+// FuelWarning removed from UI
 import TransmissionPanel from '@/components/TransmissionPanel';
 import FuelCodeEntry from '@/components/FuelCodeEntry';
 // QROverlay removed from UI
 
 export default function Home() {
-  const [gameState, setGameState] = useState<'running' | 'warning' | 'gameOver' | 'escaped'>('running');
+  const [gameState, setGameState] = useState<'prestart' | 'running' | 'warning' | 'gameOver' | 'escaped'>('prestart');
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
   const [fuelLevel, setFuelLevel] = useState(100);
   const [showTransmission, setShowTransmission] = useState(false);
@@ -16,18 +16,45 @@ export default function Home() {
   // const [showQR, setShowQR] = useState(false); // removed from UI
   const [damageLevel, setDamageLevel] = useState(0);
   const [fuelErrorMsg, setFuelErrorMsg] = useState<string | undefined>(undefined);
-  const [musicOn] = useState(true);
   const [attempts, setAttempts] = useState(0);
-  const bgAudioRef = useRef<HTMLAudioElement>(null);
   const [periodicWarning, setPeriodicWarning] = useState(false);
   const [warningText, setWarningText] = useState('WARNING');
   const [warningShowTime, setWarningShowTime] = useState(false);
   const [lastQRScanTime, setLastQRScanTime] = useState<Date | null>(null);
-  const fuelCodeFromEnv = (process.env.NEXT_PUBLIC_FUEL_CODE || 'FUEL').toUpperCase();
+  const [tenMinuteReminderShown, setTenMinuteReminderShown] = useState(false);
+  const [fiveMinuteReminderShown, setFiveMinuteReminderShown] = useState(false);
+  const [showIncomingTransmission, setShowIncomingTransmission] = useState(false);
+  const fuelCodeFromEnv = (process.env.NEXT_PUBLIC_FUEL_CODE || 'RM94').toUpperCase();
+
+  // Delay start by 2 minutes before showing timer/countdown
+  useEffect(() => {
+    let overlayTimeout: ReturnType<typeof setTimeout> | undefined;
+    const startTimeout = setTimeout(() => {
+      // Show 20s full-screen warning first
+      setWarningText('WARNING: FUEL LEVELS GETTING LOW');
+      setWarningShowTime(false);
+      setPeriodicWarning(true);
+      try {
+        const startMsgAudio = new Audio('/sounds/1 - Starting message.mp3');
+        startMsgAudio.volume = 0.8;
+        startMsgAudio.play().catch(() => {});
+      } catch {}
+
+      // After 20s, hide warning and start timer by switching to running
+      overlayTimeout = setTimeout(() => {
+        setPeriodicWarning(false);
+        setGameState('running');
+      }, 20000);
+    }, 2 * 60 * 1000);
+    return () => {
+      clearTimeout(startTimeout);
+      if (overlayTimeout) clearTimeout(overlayTimeout);
+    };
+  }, []);
 
   // Timer countdown
   useEffect(() => {
-    if (gameState === 'running' || gameState === 'warning') {
+    if (gameState === 'running') {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
           const newTime = prev - 1;
@@ -43,31 +70,7 @@ export default function Home() {
     }
   }, [gameState]);
 
-  // Background music: try to play on first interaction and when enabled
-  useEffect(() => {
-    const tryPlay = () => {
-      if (!musicOn || gameState === 'gameOver' || gameState === 'escaped') return;
-      const a = bgAudioRef.current;
-      if (!a) return;
-      a.volume = 0.35;
-      a.loop = true;
-      a.play().catch(() => {});
-    };
-
-    // attempt immediately and also on first user gesture
-    tryPlay();
-    window.addEventListener('pointerdown', tryPlay, { once: true });
-    return () => {
-      window.removeEventListener('pointerdown', tryPlay);
-    };
-  }, [musicOn, gameState]);
-
-  // Pause when disabled or on game over/win
-  useEffect(() => {
-    const a = bgAudioRef.current;
-    if (!a) return;
-    if (!musicOn || gameState === 'gameOver' || gameState === 'escaped') a.pause();
-  }, [musicOn, gameState]);
+  // Background music removed per requirements
 
   // Fuel level decreases over time
   useEffect(() => {
@@ -75,9 +78,6 @@ export default function Home() {
       const fuelTimer = setInterval(() => {
         setFuelLevel((prev) => {
           const newLevel = prev - (100 / (15 * 60)); // Decrease over 15 minutes
-          if (newLevel <= 20 && gameState === 'running') {
-            setGameState('warning');
-          }
           return Math.max(0, newLevel);
         });
       }, 1000);
@@ -86,36 +86,40 @@ export default function Home() {
     }
   }, [gameState]);
 
-  // Initial 5s warning overlay at start
-  useEffect(() => {
-    setWarningText('WARNING: FUEL LEVELS GETTING LOW');
-    setPeriodicWarning(true);
-    setWarningShowTime(false);
-    try {
-      const a = new Audio('/sounds/warning-alarm.mp3');
-      a.volume = 0.7;
-      a.play().catch(() => {});
-    } catch {}
-    const t = setTimeout(() => setPeriodicWarning(false), 5000);
-    return () => clearTimeout(t);
-  }, []);
+  // Removed initial 5s warning overlay so the fuel warning occurs at 2:00
 
-  // Flash warning every 5 minutes while active
+  // Timed WARNING overlays at 10:00 and 5:00 remaining (no audio), show remaining time
   useEffect(() => {
-    if (gameState === 'gameOver' || gameState === 'escaped') return;
-    const interval = setInterval(() => {
+    if (gameState !== 'running') return;
+
+    if (!tenMinuteReminderShown && timeLeft === 10 * 60) {
       setWarningText('WARNING');
-      setPeriodicWarning(true);
       setWarningShowTime(true);
+      setPeriodicWarning(true);
       try {
-        const a = new Audio('/sounds/warning-alarm.mp3');
-        a.volume = 0.7;
-        a.play().catch(() => {});
+        const tenMinAudio = new Audio('/sounds/2 - 10 Minute reminder.mp3');
+        tenMinAudio.volume = 0.8;
+        tenMinAudio.play().catch(() => {});
       } catch {}
-      setTimeout(() => setPeriodicWarning(false), 3000);
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [gameState]);
+      setTenMinuteReminderShown(true);
+      setTimeout(() => setPeriodicWarning(false), 20000);
+    }
+
+    if (!fiveMinuteReminderShown && timeLeft === 5 * 60) {
+      setWarningText('WARNING');
+      setWarningShowTime(true);
+      setPeriodicWarning(true);
+      try {
+        const fiveMinAudio = new Audio('/sounds/3 - 5 Minute reminder.mp3');
+        fiveMinAudio.volume = 0.8;
+        fiveMinAudio.play().catch(() => {});
+      } catch {}
+      setFiveMinuteReminderShown(true);
+      setTimeout(() => setPeriodicWarning(false), 20000);
+    }
+  }, [timeLeft, gameState, tenMinuteReminderShown, fiveMinuteReminderShown]);
+
+  // Removed old periodic 5-minute warning with audio
 
   // Play win sound and stop warning sounds when game is won
   useEffect(() => {
@@ -125,12 +129,24 @@ export default function Home() {
 
       // Play win sound
       try {
-        const winAudio = new Audio('/sounds/win.mp3');
+        const winAudio = new Audio('/sounds/6 - Mission Success.mp3');
         winAudio.volume = 0.8;
         winAudio.play().catch(() => {});
       } catch (error) {
         console.log('Could not play win sound:', error);
       }
+    }
+  }, [gameState]);
+
+  // Play mission failure audio and persist failure graphic until refresh
+  useEffect(() => {
+    if (gameState === 'gameOver') {
+      setPeriodicWarning(false);
+      try {
+        const failAudio = new Audio('/sounds/4 - Mission Failure.mp3');
+        failAudio.volume = 0.8;
+        failAudio.play().catch(() => {});
+      } catch {}
     }
   }, [gameState]);
 
@@ -169,12 +185,15 @@ export default function Home() {
           setFuelErrorMsg(undefined);
           setShowFuelEntry(true);
 
-          // Optional: Play a notification sound
+          // Show incoming transmission overlay and play Morse Code audio
+          setShowIncomingTransmission(true);
           try {
-            const notificationAudio = new Audio('/sounds/key-beep.mp3');
-            notificationAudio.volume = 0.5;
-            notificationAudio.play().catch(() => {});
+            const morseAudio = new Audio('/sounds/5 - Morse Code.mp3');
+            morseAudio.volume = 0.8;
+            morseAudio.play().catch(() => {});
           } catch {}
+          // Auto-hide overlay after 3 seconds
+          setTimeout(() => setShowIncomingTransmission(false), 3000);
 
           console.log(`QR code ${latestScan.qrCode} was scanned at ${latestScanTime}`);
         }
@@ -242,23 +261,27 @@ export default function Home() {
             timeLeft={formatTime(timeLeft)}
             fuelLevel={fuelLevel}
             gameState={gameState}
+            hideTimer={gameState === 'prestart'}
             onShowFuelEntry={() => { setFuelErrorMsg(undefined); setShowFuelEntry(true); }}
           />
           {gameState === 'gameOver' && (
-            <div className="absolute inset-0 flex items-center justify-center z-40">
-              <div className="bg-red-900/30 backdrop-blur-sm border-2 border-red-500 text-red-300 px-8 py-6 rounded-lg text-center">
-                <div className="text-4xl font-bold mb-4 animate-pulse">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-red-900/80 backdrop-blur-sm pointer-events-none">
+              <div className="text-red-100 text-6xl md:text-7xl font-extrabold text-center animate-pulse">
+                MISSION FAILED
+                <div className="mt-4 text-2xl md:text-3xl">
                   {fuelLevel <= 0 ? 'NO FUEL REMAINING' : 'CRITICAL DAMAGE'}
                 </div>
-                <div className="text-2xl">MISSION FAILED</div>
               </div>
             </div>
           )}
           {gameState === 'escaped' && (
-            <div className="absolute inset-0 flex items-center justify-center z-40">
-              <div className="bg-green-900/30 backdrop-blur-sm border-2 border-green-500 text-green-300 px-8 py-6 rounded-lg text-center">
-                <div className="text-4xl font-bold mb-4 animate-pulse">MISSION ACCOMPLISHED</div>
-                <div className="text-2xl">TIME REMAINING: {formatTime(timeLeft)}</div>
+            <div className="fixed inset-0 z-50">
+              <img src="/globe.svg" alt="Mission Success" className="w-full h-full object-cover opacity-30" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-green-200 text-6xl md:text-7xl font-extrabold text-center animate-pulse drop-shadow">
+                  MISSION SUCCESS
+                  <div className="mt-4 text-2xl md:text-3xl">TIME REMAINING: {formatTime(timeLeft)}</div>
+                </div>
               </div>
             </div>
           )}
@@ -266,13 +289,7 @@ export default function Home() {
 
         
 
-        {/* Warning overlay */}
-        {gameState === 'warning' && (
-          <FuelWarning
-            timeLeft={formatTime(timeLeft)}
-            onShowFuelEntry={() => { setFuelErrorMsg(undefined); setShowFuelEntry(true); }}
-          />
-        )}
+        {/* FuelWarning overlay removed */}
 
         {/* Transmission panel */}
         {showTransmission && (
@@ -289,23 +306,26 @@ export default function Home() {
           />
         )}
 
+        {/* Incoming transmission overlay (triggered by QR scan) */}
+        {showIncomingTransmission && (
+          <div className="fixed inset-0 z-50">
+            <img src="/tranmission.PNG" alt="Incoming Transmission" className="w-full h-full object-cover pointer-events-none" />
+          </div>
+        )}
+
         {/* Periodic warning overlay */}
         {periodicWarning && (
-          <div className="pointer-events-none fixed inset-0 flex items-center justify-center z-40">
-            <div className="bg-red-900/30 backdrop-blur-sm border-2 border-red-500 text-red-300 px-8 py-6 rounded-lg text-4xl font-bold animate-pulse text-center">
+          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-red-900/70 backdrop-blur-sm animate-pulse">
+            <div className="text-red-200 text-6xl md:text-7xl font-extrabold text-center drop-shadow">
               {warningText}
               {warningShowTime && (
-                <div className="mt-2 text-2xl font-mono text-red-200">TIME REMAINING: {formatTime(timeLeft)}</div>
+                <div className="mt-4 text-3xl md:text-4xl font-mono text-red-100">TIME REMAINING: {formatTime(timeLeft)}</div>
               )}
             </div>
           </div>
         )}
       
-      {/* Background music */}
-      
-      <audio ref={bgAudioRef} preload="auto">
-        <source src="/sounds/morse-code.mp3" type="audio/mpeg" />
-      </audio>
+      {/* Background music removed */}
     </div>
   );
 }
