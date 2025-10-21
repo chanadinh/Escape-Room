@@ -13,9 +13,10 @@ interface ControlConsoleProps {
   gameState: string;
   damageLevel?: number;
   onShowFuelEntry: () => void;
+  hideTimer?: boolean;
 }
 
-export default function ControlConsole({ timeLeft, fuelLevel, gameState, onShowFuelEntry }: ControlConsoleProps) {
+export default function ControlConsole({ timeLeft, fuelLevel, gameState, onShowFuelEntry, hideTimer }: ControlConsoleProps) {
   return (
     <div
       className={twMerge([
@@ -67,12 +68,12 @@ export default function ControlConsole({ timeLeft, fuelLevel, gameState, onShowF
           </div>
 
           {/* Bottom status strip */}
-          <BottomStatusStrip timeLeft={timeLeft} fuelLevel={fuelLevel} onShowFuelEntry={onShowFuelEntry} />
+          <BottomStatusStrip timeLeft={timeLeft} fuelLevel={fuelLevel} onShowFuelEntry={onShowFuelEntry} hideTimer={hideTimer} />
 
           {/* Mission status bar */}
           <div className="mt-4 bg-black border-2 border-yellow-500 rounded p-3">
             <div className="text-xs text-yellow-300 tracking-widest">MISSION STATUS</div>
-            <div className="text-lg font-bold text-green-400">{gameState === 'running' ? 'ACTIVE' : gameState === 'warning' ? 'WARNING' : gameState === 'gameOver' ? 'CRITICAL' : 'COMPLETE'}</div>
+            <div className="text-lg font-bold text-green-400">{gameState === 'prestart' ? 'INITIALIZING' : gameState === 'running' ? 'ACTIVE' : gameState === 'warning' ? 'WARNING' : gameState === 'gameOver' ? 'CRITICAL' : 'COMPLETE'}</div>
           </div>
         </div>
       </div>

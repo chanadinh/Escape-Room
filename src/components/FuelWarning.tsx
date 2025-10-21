@@ -54,12 +54,7 @@ export default function FuelWarning({ timeLeft, onShowFuelEntry }: FuelWarningPr
           </div>
         </div>
         
-        <button
-          onClick={onShowFuelEntry}
-          className="bg-red-700 hover:bg-red-600 border-2 border-red-400 px-8 py-4 rounded text-red-100 text-xl font-bold transition-all duration-200 hover:scale-105"
-        >
-          ENTER FUEL CODE
-        </button>
+        {/* Fuel code button hidden; access via QR only */}
       </div>
     </div>
   );

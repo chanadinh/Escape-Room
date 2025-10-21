@@ -57,6 +57,26 @@ body {
   animation: flicker 0.15s infinite linear;
 }
 
+/* HUD mini radar sweep */
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.radar-sweep {
+  animation: radar-sweep 2.8s linear infinite;
+}
+
+/* Cyan neon glow helper */
+.glow-cyan {
+  filter: drop-shadow(0 0 6px rgba(103, 232, 249, 0.6)) drop-shadow(0 0 12px rgba(103, 232, 249, 0.35));
+}
+
+/* Variant: slower sweep for better readability */
+.radar-sweep-slow {
+  animation: radar-sweep 3.2s linear infinite;
+}
+
 /* Custom scrollbar for sci-fi feel */
 ::-webkit-scrollbar {
   width: 8px;
