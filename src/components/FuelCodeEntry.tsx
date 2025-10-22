@@ -7,9 +7,10 @@ interface FuelCodeEntryProps {
   onClose: () => void;
   errorMessage?: string;
   attempts: number;
+  timeLeft: string;
 }
 
-export default function FuelCodeEntry({ onSubmit, onClose, errorMessage, attempts }: FuelCodeEntryProps) {
+export default function FuelCodeEntry({ onSubmit, onClose, errorMessage, attempts, timeLeft }: FuelCodeEntryProps) {
   const [code, setCode] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +45,13 @@ export default function FuelCodeEntry({ onSubmit, onClose, errorMessage, attempt
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
+      {/* Timer overlay in top-right, pointer-events disabled so modal remains interactive */}
+      <div className="absolute top-3 right-3 pointer-events-none">
+        <div className="bg-black/70 border border-green-500 rounded px-3 py-2 text-green-300 text-right">
+          <div className="text-[10px] tracking-widest">TIMER</div>
+          <div className="text-xl font-mono">{timeLeft}</div>
+        </div>
+      </div>
       <div className="bg-gray-900 border-2 border-green-500 rounded-lg p-8 max-w-md w-full mx-4">
         <div className="text-center">
           <div className="text-2xl font-bold text-green-400 mb-6">
