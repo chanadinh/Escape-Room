@@ -192,8 +192,8 @@ export default function Home() {
             morseAudio.volume = 0.8;
             morseAudio.play().catch(() => {});
           } catch {}
-          // Auto-hide overlay after 3 seconds
-          setTimeout(() => setShowIncomingTransmission(false), 3000);
+          // Auto-hide overlay after 7 seconds
+          setTimeout(() => setShowIncomingTransmission(false), 7000);
 
           console.log(`QR code ${latestScan.qrCode} was scanned at ${latestScanTime}`);
         }
@@ -303,6 +303,7 @@ export default function Home() {
             errorMessage={fuelErrorMsg}
             onClose={() => { setFuelErrorMsg(undefined); setShowFuelEntry(false); }}
             attempts={attempts}
+            timeLeft={formatTime(timeLeft)}
           />
         )}
 
